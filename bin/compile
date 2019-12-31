@@ -7,10 +7,21 @@ CACHE_DIR=$2
 ENV_DIR=$3
 
 LIBMAXMINDDB_VERSION=1.2.1
-GEOLITE2_CITY_FILENAME="GeoLite2-City.mmdb"
-GEOLITE2_CITY_TARBALL_FILENAME="GeoLite2-City.tar.gz"
-GEOLITE2_COUNTRY_FILENAME="GeoLite2-Country.mmdb"
-GEOLITE2_COUNTRY_TARBALL_FILENAME="GeoLite2-Country.tar.gz"
+
+# Use ENV var and fall back to license file
+# Expects ENV var to be `MAXMIND_LICENSE_KEY`
+MAXMIND_LICENSE_FROM_FILE=`cat $ENV_DIR/MAXMIND_LICENSE_KEY`
+MAXMIND_LICENSE=${MAXMIND_LICENSE_KEY:=$MAXMIND_LICENSE_FROM_FILE}
+
+GEOLITE2_CITY="GeoLite2-City"
+GEOLITE2_COUNTRY="GeoLite2-Country"
+FILENAME_SUFFIX="mmdb"
+TARBALL_SUFFIX="tar.gz"
+
+GEOLITE2_CITY_FILENAME="$GEOLITE2_CITY.$FILENAME_SUFFIX"
+GEOLITE2_CITY_TARBALL_FILENAME="$GEOLITE2_CITY.$TARBALL_SUFFIX"
+GEOLITE2_COUNTRY_FILENAME="$GEOLITE2_COUNTRY.$FILENAME_SUFFIX"
+GEOLITE2_COUNTRY_TARBALL_FILENAME="$GEOLITE2_COUNTRY.$TARBALL_SUFFIX"
 
 BUILD_DIST_DIR="$BUILD_DIR/.geoip"
 BUILD_DIST_SHARE_DIR="$BUILD_DIST_DIR/share"
@@ -29,8 +40,8 @@ mkdir -p "$LIBMAXMINDDB_CACHE_DIST_DIR"
 
 echo "       Downloading GeoLite2 City and Country data"
 
-wget -Nq -P "$GEOIP_CACHE_DIR" "https://geolite.maxmind.com/download/geoip/database/$GEOLITE2_CITY_TARBALL_FILENAME" 
-wget -Nq -P "$GEOIP_CACHE_DIR" "https://geolite.maxmind.com/download/geoip/database/$GEOLITE2_COUNTRY_TARBALL_FILENAME"
+wget -Nq -P "$GEOIP_CACHE_DIR" "https://download.maxmind.com/app/geoip_download?edition_id=$GEOLITE2_CITY&license_key=$MAXMIND_LICENSE&suffix=$TARBALL_SUFFIX"
+wget -Nq -P "$GEOIP_CACHE_DIR" "https://download.maxmind.com/app/geoip_download?edition_id=$GEOLITE2_COUNTRY&license_key=$MAXMIND_LICENSE&suffix=$TARBALL_SUFFIX"
 
 tar -xvf "$GEOIP_CACHE_DIR/$GEOLITE2_CITY_TARBALL_FILENAME" --directory "$BUILD_DIST_SHARE_DIR" --no-anchored --strip-components=1 "$GEOLITE2_CITY_FILENAME"
 tar -xvf "$GEOIP_CACHE_DIR/$GEOLITE2_COUNTRY_TARBALL_FILENAME" --directory "$BUILD_DIST_SHARE_DIR" --no-anchored --strip-components=1 "$GEOLITE2_COUNTRY_FILENAME"
@@ -51,7 +62,7 @@ else
     tar -xf "$WORK_DIR/libmaxminddb-$LIBMAXMINDDB_VERSION.tar.gz" --directory "$WORK_DIR" --strip-components=1
 
     echo "       Building libmaxminddb-$LIBMAXMINDDB_VERSION"
-    
+
     pushd "$WORK_DIR" > /dev/null
     ./configure --quiet --prefix "$LIBMAXMINDDB_CACHE_DIST_DIR"
     make >/dev/null || make
